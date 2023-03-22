@@ -1,6 +1,8 @@
 import tkinter as tk
 from w1thermsensor import W1ThermSensor
 
+from typing import Union
+
 import RPi.GPIO as GPIO
 
 
@@ -14,7 +16,8 @@ import RPi.GPIO as GPIO
 class Controller:
     """Class for controlling the Raspberry Pi GPIO pins"""
 
-    def __init__(self, input_pin, output_pin, pwm_pin, pwm_frequency):
+    def __init__(self, input_pin: int, output_pin: int, pwm_pin: int, pwm_frequency: Union[int, float]):
+        GPIO.cleanup()
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
 
@@ -31,28 +34,32 @@ class Controller:
         self.sensor = W1ThermSensor()
         self.PWM = GPIO.PWM(self.pwm_pin, pwm_frequency)
 
-    def set_pwm(self, value):
+    def set_pwm(self, value) -> None:
         self.PWM.start(value)
 
-    def set_duty_cycle(self, value):
+    def set_duty_cycle(self, value) -> None:
         self.PWM.ChangeDutyCycle(value)
 
-    def set_frequency(self, value):
+    def set_frequency(self, value) -> None:
         self.PWM.ChangeFrequency(value)
 
-    def get_temperature(self):
+    def get_temperature(self) -> float:
         return self.sensor.get_temperature()
 
     # TODO: implement the calbacks with bouncetime
     # TODO: tune for the best bounce time
-    def register_input_callback(self, callback):
+    def register_input_callback(self, callback) -> None:
         GPIO.add_event_detect(self.input_pin, GPIO.BOTH, callback=callback)
 
-    def register_output_callback(self, callback):
+    def register_output_callback(self, callback) -> None:
         GPIO.add_event_detect(self.output_pin, GPIO.BOTH, callback=callback)
 
-    def register_pwm_callback(self, callback):
+    def register_pwm_callback(self, callback) -> None:
         GPIO.add_event_detect(self.pwm_pin, GPIO.BOTH, callback=callback)
+
+    def __del__(self):
+        GPIO.cleanup()
+        pass
 
 
 class App(tk.Tk):
@@ -94,9 +101,7 @@ class App(tk.Tk):
     def update_temperature(self):
         temperature = self.controller.get_temperature()
         self.temperature_label["text"] = f"Temperature: {temperature}°C"
-
-    def __del__(self):
-        GPIO.cleanup()
+        self.after(1000, self.update_temperature)
 
 
 if __name__ == "__main__":
